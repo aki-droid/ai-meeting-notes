@@ -1,69 +1,131 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
 
 export default function Home() {
+  const [file, setFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [transcription, setTranscription] = useState("");
+  const [segments, setSegments] = useState<
+    { start: number; end: number; text: string }[]
+  >([]);
+  const handleTranscription = async () => {
+    if (!file) {
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/transcriptions", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "文字起こしに失敗しました");
+      }
+
+      setTranscription(data.text);
+      setSegments(data.segments);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
+    <main className="min-h-screen bg-gray-50">
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+          <h1 className="text-xl font-bold text-gray-900">
+            AI Meeting Notes
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+          <nav className="flex gap-3">
+            <button className="rounded-md border px-4 py-2 text-sm">
+              ログイン
+            </button>
+            <button className="rounded-md bg-black px-4 py-2 text-sm text-white">
+              新規登録
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <section className="mx-auto max-w-3xl px-6 py-20 text-center">
+        <h2 className="text-4xl font-bold tracking-tight text-gray-900">
+          AIで、議事録作成をもっと簡単に。
+        </h2>
+
+        <p className="mt-5 text-lg text-gray-600">
+          音声ファイルをアップロードするだけで、
+          <br />
+          AIが会議の内容を文字起こしします。
+        </p>
+
+        <div className="mt-10 rounded-xl border-2 border-dashed border-gray-300 bg-white p-10">
+          <p className="text-gray-600">
+            音声ファイルをアップロードしてください
+          </p>
+
+          <input
+            type="file"
+            accept="audio/*"
+            onChange={(event) => {
+              const selectedFile = event.target.files?.[0] ?? null;
+              setFile(selectedFile);
+            }}
+          />
+          
+          <button
+            onClick={handleTranscription}
+            disabled={!file || isLoading}
+            className="mt-6 rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
+          >
+            {isLoading ? "文字起こし中..." : "文字起こし開始"}
+          </button>
+
+          {file && (
+            <p className="mt-4 text-sm text-gray-600">
+              選択したファイル：{file.name}
+            </p>
+          )}
+
+          {segments.length > 0 && (
+            <div className="mt-8 rounded-xl border bg-white p-6 text-left">
+              <h3 className="text-lg font-bold text-gray-900">
+                文字起こし結果
+              </h3>
+
+              <div className="mt-4 space-y-3">
+                {segments.map((segment, index) => (
+                  <div key={index} className="flex gap-4">
+                    <span className="shrink-0 font-mono text-sm text-gray-500">
+                      {Math.floor(segment.start / 60)
+                        .toString()
+                        .padStart(2, "0")}
+                      :
+                      {Math.floor(segment.start % 60)
+              .toString()
+              .padStart(2, "0")}
+          </span>
+
+          <p className="text-gray-700">
+            {segment.text}
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      ))}
     </div>
+  </div>
+)}
+        </div>
+      </section>
+    </main>
   );
 }
