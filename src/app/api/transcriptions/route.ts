@@ -31,12 +31,15 @@ export async function POST(request: Request) {
     );
 
     const transcription = await openai.audio.transcriptions.create({
-      model: "gpt-4o-mini-transcribe",
+      model: "whisper-1",
       file: audioFile,
+      response_format: "verbose_json",
+      timestamp_granularities: ["segment"],
     });
 
     return NextResponse.json({
       text: transcription.text,
+      segments: transcription.segments,
     });
   } catch (error) {
     console.error(error);
