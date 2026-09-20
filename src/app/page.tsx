@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 
 export default function Home() {
@@ -8,6 +9,9 @@ export default function Home() {
   const [segments, setSegments] = useState<
     { start: number; end: number; text: string }[]
   >([]);
+  const [summary, setSummary] = useState("");
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
   const handleTranscription = async () => {
     if (!file) {
       return;
@@ -39,6 +43,38 @@ export default function Home() {
     }
   };
 
+  const handleSummary = async () => {
+    if (!transcription) {
+      return;
+    }
+
+    setIsSummaryLoading(true);
+
+    try {
+      const response = await fetch("/api/summaries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: transcription,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "AI要約に失敗しました");
+      }
+
+      setSummary(data.summary);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
@@ -51,6 +87,7 @@ export default function Home() {
             <button className="rounded-md border px-4 py-2 text-sm">
               ログイン
             </button>
+
             <button className="rounded-md bg-black px-4 py-2 text-sm text-white">
               新規登録
             </button>
@@ -82,7 +119,13 @@ export default function Home() {
               setFile(selectedFile);
             }}
           />
-          
+
+          {file && (
+            <p className="mt-4 text-sm text-gray-600">
+              選択したファイル：{file.name}
+            </p>
+          )}
+
           <button
             onClick={handleTranscription}
             disabled={!file || isLoading}
@@ -90,12 +133,6 @@ export default function Home() {
           >
             {isLoading ? "文字起こし中..." : "文字起こし開始"}
           </button>
-
-          {file && (
-            <p className="mt-4 text-sm text-gray-600">
-              選択したファイル：{file.name}
-            </p>
-          )}
 
           {segments.length > 0 && (
             <div className="mt-8 rounded-xl border bg-white p-6 text-left">
@@ -112,18 +149,40 @@ export default function Home() {
                         .padStart(2, "0")}
                       :
                       {Math.floor(segment.start % 60)
-              .toString()
-              .padStart(2, "0")}
-          </span>
+                        .toString()
+                        .padStart(2, "0")}
+                    </span>
 
-          <p className="text-gray-700">
-            {segment.text}
-          </p>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+                    <p className="text-gray-700">
+                      {segment.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {transcription && (
+            <button
+              onClick={handleSummary}
+              disabled={isSummaryLoading}
+              className="mt-6 rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
+            >
+              {isSummaryLoading ? "要約中..." : "AI要約を生成"}
+            </button>
+          )}
+
+          {summary && (
+            <div className="mt-8 rounded-xl border bg-white p-6 text-left">
+              <h3 className="text-lg font-bold text-gray-900">
+                AI要約
+              </h3>
+
+              <p className="mt-4 whitespace-pre-wrap text-gray-700">
+                {summary}
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </main>
