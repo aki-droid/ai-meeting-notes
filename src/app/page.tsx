@@ -11,6 +11,15 @@ export default function Home() {
   >([]);
   const [summary, setSummary] = useState("");
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [todos, setTodos] = useState<
+    {
+      task: string;
+      assignee: string | null;
+      dueDate: string | null;
+    }[]
+  >([]);
+  const [isTodoLoading, setIsTodoLoading] = useState(false);
+  const [todoExtracted, setTodoExtracted] = useState(false);
 
   const handleTranscription = async () => {
     if (!file) {
@@ -36,6 +45,9 @@ export default function Home() {
 
       setTranscription(data.text);
       setSegments(data.segments);
+      setSummary("");
+      setTodos([]);
+      setTodoExtracted(false);
     } catch (error) {
       console.error(error);
     } finally {
@@ -72,6 +84,39 @@ export default function Home() {
       console.error(error);
     } finally {
       setIsSummaryLoading(false);
+    }
+  };
+
+  const handleTodos = async () => {
+    if (!transcription) {
+      return;
+    }
+
+    setIsTodoLoading(true);
+
+    try {
+      const response = await fetch("/api/todos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: transcription,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "TODOの抽出に失敗しました");
+      }
+
+      setTodos(data.todos);
+      setTodoExtracted(true);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsTodoLoading(false);
     }
   };
 
@@ -163,13 +208,23 @@ export default function Home() {
           )}
 
           {transcription && (
-            <button
-              onClick={handleSummary}
-              disabled={isSummaryLoading}
-              className="mt-6 rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
-            >
-              {isSummaryLoading ? "要約中..." : "AI要約を生成"}
-            </button>
+            <div className="mt-6 flex justify-center gap-3">
+              <button
+                onClick={handleSummary}
+                disabled={isSummaryLoading}
+                className="rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
+              >
+                {isSummaryLoading ? "要約中..." : "AI要約を生成"}
+              </button>
+
+              <button
+                onClick={handleTodos}
+                disabled={isTodoLoading}
+                className="rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
+              >
+                {isTodoLoading ? "TODO抽出中..." : "TODOを抽出"}
+              </button>
+            </div>
           )}
 
           {summary && (
@@ -181,6 +236,49 @@ export default function Home() {
               <p className="mt-4 whitespace-pre-wrap text-gray-700">
                 {summary}
               </p>
+            </div>
+          )}
+  
+          {todoExtracted && todos.length === 0 && (
+            <div className="mt-8 rounded-xl border bg-white p-6 text-left">
+              <h3 className="text-lg font-bold text-gray-900">
+                TODO
+              </h3>
+
+              <p className="mt-4 text-gray-600">
+                TODOはありませんでした。
+              </p>
+            </div>
+          )}
+          
+          {todos.length > 0 && (
+            <div className="mt-8 rounded-xl border bg-white p-6 text-left">
+              <h3 className="text-lg font-bold text-gray-900">
+                TODO
+              </h3>
+
+              <div className="mt-4 space-y-4">
+                {todos.map((todo, index) => (
+                  <div
+                    key={index}
+                    className="rounded-lg border p-4"
+                  >
+                    <p className="font-medium text-gray-900">
+                      {todo.task}
+                    </p>
+
+                    <div className="mt-2 text-sm text-gray-600">
+                      <p>
+                        担当：{todo.assignee ?? "未指定"}
+                      </p>
+
+                      <p>
+                        期限：{todo.dueDate ?? "未指定"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
