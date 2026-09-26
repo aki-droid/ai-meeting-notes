@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function Home() {
   const [file, setFile] = useState<File | null>(null);
+  const [title, setTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [transcription, setTranscription] = useState("");
   const [segments, setSegments] = useState<
@@ -120,6 +121,43 @@ export default function Home() {
     }
   };
 
+      const handleSaveMeeting = async () => {
+        if (!title.trim() || !transcription) {
+          alert("会議タイトルと文字起こし結果を入力してください");
+          return;
+        }
+
+        try {
+          const response = await fetch("/api/meetings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId: 1,
+              title: title.trim(),
+              audioUrl: file ? `/uploads/${file.name}` : "",
+              summary,
+              status: "completed",
+              transcription,
+              segments,
+              todos,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "議事録の保存に失敗しました");
+          }
+
+          alert("議事録を保存しました");
+        } catch (error) {
+          console.error(error);
+          alert("議事録の保存に失敗しました");
+        }
+      };
+
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
@@ -152,6 +190,22 @@ export default function Home() {
         </p>
 
         <div className="mt-10 rounded-xl border-2 border-dashed border-gray-300 bg-white p-10">
+        <div className="mb-6 text-left">
+          <label
+            htmlFor="meeting-title"
+            className="mb-2 block font-medium text-gray-700"
+          >
+            会議タイトル
+          </label>
+          <input
+            id="meeting-title"
+            type="text"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="例：定例会議"
+            className="w-full rounded-md border border-gray-300 px-4 py-2"
+          />
+        </div>  
           <p className="text-gray-600">
             音声ファイルをアップロードしてください
           </p>
@@ -280,6 +334,14 @@ export default function Home() {
                 ))}
               </div>
             </div>
+          )}
+          {transcription && (
+            <button
+              onClick={handleSaveMeeting}
+              className="mt-8 rounded-md bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700"
+            >
+              議事録を保存
+            </button>
           )}
         </div>
       </section>
