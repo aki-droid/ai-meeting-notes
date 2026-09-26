@@ -1,8 +1,13 @@
 "use client";
 
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function Home() {
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -122,6 +127,11 @@ export default function Home() {
   };
 
       const handleSaveMeeting = async () => {
+        if (!session?.user.id) {
+          alert("ログインしてください");
+          return;
+        }
+
         if (!title.trim() || !transcription) {
           alert("会議タイトルと文字起こし結果を入力してください");
           return;
@@ -134,7 +144,6 @@ export default function Home() {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              userId: 1,
               title: title.trim(),
               audioUrl: file ? `/uploads/${file.name}` : "",
               summary,
@@ -166,14 +175,40 @@ export default function Home() {
             AI Meeting Notes
           </h1>
 
-          <nav className="flex gap-3">
-            <button className="rounded-md border px-4 py-2 text-sm">
-              ログイン
-            </button>
+          <nav className="flex items-center gap-3">
+            {session?.user ? (
+              <>
+                <span className="text-sm text-gray-700">
+                  {session.user.name} さん
+                </span>
 
-            <button className="rounded-md bg-black px-4 py-2 text-sm text-white">
-              新規登録
-            </button>
+                <button
+                  type="button"
+                  onClick={() => signOut({ callbackUrl: "/" })}
+                  className="rounded-md border px-4 py-2 text-sm"
+                >
+                  ログアウト
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => router.push("/login")}
+                  className="rounded-md border px-4 py-2 text-sm"
+                >
+                  ログイン
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => router.push("/register")}
+                  className="rounded-md bg-black px-4 py-2 text-sm text-white"
+                >
+                  新規登録
+                </button>
+              </>
+            )}
           </nav>
         </div>
       </header>
