@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Meeting = {
 id: number;
@@ -89,9 +90,10 @@ AI Meeting Notes </h1>
     ) : (
       <div className="space-y-4">
         {meetings.map((meeting) => (
-          <article
+          <Link
             key={meeting.id}
-            className="rounded-lg border bg-white p-6 shadow-sm"
+            href={`/meetings/${meeting.id}`}
+            className="block rounded-lg border bg-white p-6 shadow-sm transition hover:bg-gray-50"
           >
             <h3 className="mb-2 text-lg font-semibold text-gray-900">
               {meeting.title}
@@ -110,7 +112,7 @@ AI Meeting Notes </h1>
                 要約はありません。
               </p>
             )}
-          </article>
+          </Link>
         ))}
       </div>
     )}
