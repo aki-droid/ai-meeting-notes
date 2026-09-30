@@ -3,6 +3,44 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/lib/auth";
 
+export async function GET() {
+try {
+const session = await getServerSession(authOptions);
+
+if (!session?.user?.id) {
+  return NextResponse.json(
+    { error: "ログインしてください" },
+    { status: 401 },
+  );
+}
+
+const userId = Number(session.user.id);
+
+const meetings = await prisma.meeting.findMany({
+  where: { userId },
+  orderBy: { createdAt: "desc" },
+  select: {
+    id: true,
+    title: true,
+    summary: true,
+    status: true,
+    createdAt: true,
+  },
+});
+
+return NextResponse.json({ meetings });
+
+} catch (error) {
+console.error(error);
+
+return NextResponse.json(
+  { error: "議事録の取得に失敗しました" },
+  { status: 500 },
+);
+
+}
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);

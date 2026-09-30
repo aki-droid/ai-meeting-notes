@@ -206,7 +206,15 @@ export default function Home() {
                 <span className="text-sm text-gray-700">
                   {session.user.name} さん
                 </span>
-
+                
+                <button
+                  type="button"
+                  onClick={() => router.push("/meetings")}
+                  className="rounded-md border px-4 py-2 text-sm"
+                >
+                  議事録履歴
+                </button>
+                
                 <button
                   type="button"
                   onClick={() => signOut({ callbackUrl: "/" })}
