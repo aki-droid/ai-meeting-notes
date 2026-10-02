@@ -49,3 +49,4 @@ next-env.d.ts
 /.devin/
 /.windsurf/
 skills-lock.json
+/public/uploads/
