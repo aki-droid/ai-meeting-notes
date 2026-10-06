@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -16,6 +17,12 @@ export default function RegisterPage() {
     event.preventDefault();
     setError("");
     setIsLoading(true);
+
+    if (password !== confirmPassword) {
+      setError("パスワードが一致していません");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch("/api/register", {
@@ -49,7 +56,7 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-2xl font-bold text-gray-900">
           新規登録
         </h1>
@@ -68,7 +75,7 @@ export default function RegisterPage() {
               value={name}
               onChange={(event) => setName(event.target.value)}
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-2"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -85,7 +92,7 @@ export default function RegisterPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-2"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -103,7 +110,30 @@ export default function RegisterPage() {
               onChange={(event) => setPassword(event.target.value)}
               required
               minLength={8}
-              className="w-full rounded-md border border-gray-300 px-4 py-2"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            />
+
+            <p className="mt-1 text-xs text-gray-500">
+              パスワードは8文字以上で入力してください。
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="mb-2 block font-medium text-gray-700"
+            >
+              パスワード（確認）
+            </label>
+
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
+              minLength={8}
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -116,7 +146,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-md bg-black px-4 py-3 font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            className="w-full rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {isLoading ? "登録中..." : "新規登録"}
           </button>
@@ -125,7 +155,7 @@ export default function RegisterPage() {
         <button
           type="button"
           onClick={() => router.push("/login")}
-          className="mt-4 w-full text-sm text-gray-600 hover:underline"
+          className="mt-4 w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
           すでにアカウントをお持ちの方はこちら
         </button>

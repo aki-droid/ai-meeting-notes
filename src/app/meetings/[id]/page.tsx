@@ -228,17 +228,17 @@ export default function MeetingDetailPage() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <h1 className="text-xl font-bold text-gray-900">
             AI Meeting Notes
           </h1>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center justify-end gap-2 md:w-auto">
             {!isEditing && (
               <button
                 type="button"
                 onClick={startEditing}
-                className="rounded-md bg-black px-4 py-2 text-sm text-white"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 編集
               </button>
@@ -247,7 +247,7 @@ export default function MeetingDetailPage() {
             <button
               type="button"
               onClick={() => router.push("/meetings")}
-              className="rounded-md border bg-white px-4 py-2 text-sm"
+              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               議事録履歴に戻る
             </button>
@@ -255,33 +255,44 @@ export default function MeetingDetailPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-5xl space-y-6 px-6 py-10">
+      <section className="mx-auto max-w-5xl space-y-6 px-6 py-8">
         {error && (
           <p className="rounded-md bg-red-100 p-4 text-red-700">
             {error}
           </p>
         )}
 
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <h2 className="text-2xl font-bold text-gray-900">
             {meeting.title}
           </h2>
 
           <p className="mt-2 text-sm text-gray-500">
-            {new Date(meeting.createdAt).toLocaleString("ja-JP")}
+            {new Date(meeting.createdAt).toLocaleString("ja-JP", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </p>
 
           <div className="mt-6">
-            <h3 className="mb-3 text-lg font-semibold text-gray-900">
-              要約
-            </h3>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                要約
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                会議の内容を簡潔にまとめています。
+              </p>
+            </div>
 
             {isEditing ? (
               <textarea
                 value={summary}
                 onChange={(event) => setSummary(event.target.value)}
                 rows={6}
-                className="w-full rounded-md border px-3 py-2 text-gray-700"
+                className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 placeholder="要約を入力してください"
               />
             ) : meeting.summary ? (
@@ -294,10 +305,15 @@ export default function MeetingDetailPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            文字起こし
-          </h3>
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              文字起こし
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              会議の発言内容を確認できます。
+            </p>
+          </div>
 
           {isEditing ? (
             transcripts.length === 0 ? (
@@ -326,7 +342,7 @@ export default function MeetingDetailPage() {
                               event.target.value,
                             )
                           }
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
 
@@ -346,7 +362,7 @@ export default function MeetingDetailPage() {
                               event.target.value,
                             )
                           }
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
 
@@ -366,7 +382,7 @@ export default function MeetingDetailPage() {
                               event.target.value,
                             )
                           }
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -385,7 +401,7 @@ export default function MeetingDetailPage() {
                           )
                         }
                         rows={4}
-                        className="w-full rounded-md border px-3 py-2"
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
                   </div>
@@ -403,12 +419,12 @@ export default function MeetingDetailPage() {
                   key={transcript.id}
                   className="border-b pb-4 last:border-b-0 last:pb-0"
                 >
-                  <div className="mb-1 flex items-center gap-3">
-                    <span className="font-semibold text-gray-900">
+                  <div className="mb-2 flex items-center gap-3">
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700">
                       {transcript.speaker}
                     </span>
 
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs text-gray-500">
                       {formatTime(transcript.startTime)} -{" "}
                       {formatTime(transcript.endTime)}
                     </span>
@@ -423,10 +439,15 @@ export default function MeetingDetailPage() {
           )}
         </div>
 
-        <div className="rounded-lg border bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            TODO
-          </h3>
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              TODO
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              会議で決まった作業を確認できます。
+            </p>
+          </div>
 
           {isEditing ? (
             todos.length === 0 ? (
@@ -452,7 +473,7 @@ export default function MeetingDetailPage() {
                           )
                         }
                         rows={3}
-                        className="w-full rounded-md border px-3 py-2"
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                       />
                     </div>
 
@@ -471,7 +492,7 @@ export default function MeetingDetailPage() {
                               event.target.value || null,
                             )
                           }
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
 
@@ -493,7 +514,7 @@ export default function MeetingDetailPage() {
                               event.target.value || null,
                             )
                           }
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                         />
                       </div>
                     </div>
@@ -525,18 +546,18 @@ export default function MeetingDetailPage() {
                   key={todo.id}
                   className="border-b pb-4 last:border-b-0 last:pb-0"
                 >
-                  <p className="font-medium text-gray-900">
+                  <p className="text-base font-medium text-gray-900">
                     {todo.content}
                   </p>
 
                   {todo.assignee && (
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-2 text-sm text-gray-500">
                       担当者: {todo.assignee}
                     </p>
                   )}
 
                   {todo.dueDate && (
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-sm text-gray-500">
                       期限:{" "}
                       {new Date(todo.dueDate).toLocaleDateString(
                         "ja-JP",
@@ -544,8 +565,14 @@ export default function MeetingDetailPage() {
                     </p>
                   )}
 
-                  <p className="mt-1 text-sm text-gray-500">
-                    状態: {todo.completed ? "完了" : "未完了"}
+                  <p
+                    className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${
+                      todo.completed
+                        ? "bg-green-100 text-green-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {todo.completed ? "完了" : "未完了"}
                   </p>
                 </div>
               ))}
@@ -559,7 +586,7 @@ export default function MeetingDetailPage() {
               type="button"
               onClick={cancelEditing}
               disabled={isSaving}
-              className="rounded-md border bg-white px-5 py-2 text-sm"
+              className="rounded-md border border-gray-300 bg-white px-5 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               キャンセル
             </button>
@@ -568,7 +595,7 @@ export default function MeetingDetailPage() {
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="rounded-md bg-black px-5 py-2 text-sm text-white disabled:opacity-50"
+              className="rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {isSaving ? "保存中..." : "保存"}
             </button>

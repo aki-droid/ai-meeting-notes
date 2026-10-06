@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow">
+      <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-2xl font-bold text-gray-900">
           ログイン
         </h1>
@@ -61,7 +61,7 @@ export default function LoginPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-2"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              className="w-full rounded-md border border-gray-300 px-4 py-2"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-gray-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
           </div>
 
@@ -92,16 +92,26 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-md bg-black px-4 py-3 font-medium text-white hover:bg-gray-800 disabled:opacity-50"
+            className="w-full rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
           >
             {isLoading ? "ログイン中..." : "ログイン"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              alert("パスワード再設定機能は現在準備中です");
+            }}
+            className="mt-3 w-full text-sm text-gray-600 hover:text-gray-900 hover:underline"
+          >
+            パスワードをお忘れの方はこちら
           </button>
         </form>
 
         <button
           type="button"
           onClick={() => router.push("/register")}
-          className="mt-4 w-full text-sm text-gray-600 hover:underline"
+          className="mt-4 w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
           アカウントをお持ちでない方はこちら
         </button>
