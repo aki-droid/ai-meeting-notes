@@ -9,6 +9,7 @@ export default function Home() {
   const router = useRouter();
 
   const [file, setFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [audioUrl, setAudioUrl] = useState("");
   const [title, setTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -195,12 +196,12 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
       <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-6 py-4 md:flex-row md:items-center md:justify-between">
           <h1 className="text-xl font-bold text-gray-900">
             AI Meeting Notes
           </h1>
 
-          <nav className="flex items-center gap-3">
+          <nav className="flex w-full items-center justify-end gap-3 md:w-auto">
             {session?.user ? (
               <>
                 <span className="text-sm text-gray-700">
@@ -210,7 +211,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => router.push("/meetings")}
-                  className="rounded-md border px-4 py-2 text-sm"
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   議事録履歴
                 </button>
@@ -218,7 +219,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => signOut({ callbackUrl: "/" })}
-                  className="rounded-md border px-4 py-2 text-sm"
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   ログアウト
                 </button>
@@ -228,7 +229,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => router.push("/login")}
-                  className="rounded-md border px-4 py-2 text-sm"
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
                   ログイン
                 </button>
@@ -236,7 +237,7 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={() => router.push("/register")}
-                  className="rounded-md bg-black px-4 py-2 text-sm text-white"
+                  className="rounded-md bg-black px-4 py-2 text-sm text-white hover:bg-gray-800"
                 >
                   新規登録
                 </button>
@@ -257,7 +258,7 @@ export default function Home() {
           AIが会議の内容を文字起こしします。
         </p>
 
-        <div className="mt-10 rounded-xl border-2 border-dashed border-gray-300 bg-white p-10">
+        <div className="mt-10 rounded-xl border border-gray-200 bg-white p-10">
         <div className="mb-6 text-left">
           <label
             htmlFor="meeting-title"
@@ -271,35 +272,77 @@ export default function Home() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="例：定例会議"
-            className="w-full rounded-md border border-gray-300 px-4 py-2"
+            className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
           />
         </div>  
-          <p className="text-gray-600">
-            音声ファイルをアップロードしてください
-          </p>
-
-          <input
-            type="file"
-            accept="audio/*"
-            onChange={(event) => {
-              const selectedFile = event.target.files?.[0] ?? null;
-              setFile(selectedFile);
+          <div
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
             }}
-          />
+            onDragOver={(event) => event.preventDefault()}
+            onDragLeave={(event) => {
+              event.preventDefault();
 
-          {file && (
-            <p className="mt-4 text-sm text-gray-600">
-              選択したファイル：{file.name}
+              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                setIsDragging(false);
+              }
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragging(false);
+
+              const droppedFile = event.dataTransfer.files[0];
+              if (droppedFile) {
+                setFile(droppedFile);
+              }
+            }}
+            className={`mt-4 rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
+              isDragging
+                ? "border-blue-500 bg-blue-50"
+                : "border-gray-300 bg-gray-50"
+            }`}
+          >
+            <p className="text-gray-700">
+              音声ファイルをここにドラッグ＆ドロップ
             </p>
-          )}
+
+            <p className="my-3 text-sm text-gray-500">または</p>
+
+            <label className="inline-block cursor-pointer rounded-md bg-blue-600 px-5 py-3 font-medium text-white hover:bg-blue-700">
+              ファイルを選択
+              <input
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={(event) => {
+                  const selectedFile = event.target.files?.[0] ?? null;
+                  setFile(selectedFile);
+                }}
+              />
+             </label>
+
+              {file && (
+                <p className="mt-4 text-sm text-gray-700">
+                  選択したファイル：{file.name}
+                </p>
+              )}
+            </div>
 
           <button
             onClick={handleTranscription}
             disabled={!file || isLoading}
             className="mt-6 rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
           >
+            {isLoading && (
+              <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent align-middle" />
+            )}
             {isLoading ? "文字起こし中..." : "文字起こし開始"}
           </button>
+
+          <p className="mt-3 text-sm text-gray-500">
+            ※音声ファイルの長さによっては、文字起こしに時間がかかる場合があります。
+          </p>
 
           {segments.length > 0 && (
             <div className="mt-8 rounded-xl border bg-white p-6 text-left">
@@ -336,6 +379,9 @@ export default function Home() {
                 disabled={isSummaryLoading}
                 className="rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
               >
+                {isSummaryLoading && (
+                  <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent align-middle" />
+                )}
                 {isSummaryLoading ? "要約中..." : "AI要約を生成"}
               </button>
 
@@ -344,7 +390,10 @@ export default function Home() {
                 disabled={isTodoLoading}
                 className="rounded-md bg-black px-6 py-3 font-medium text-white disabled:opacity-50"
               >
-                {isTodoLoading ? "TODO抽出中..." : "TODOを抽出"}
+                {isTodoLoading && (
+                  <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent align-middle" />
+                  )}
+                  {isTodoLoading ? "TODO抽出中..." : "TODOを抽出"}
               </button>
             </div>
           )}
