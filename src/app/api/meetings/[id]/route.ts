@@ -215,3 +215,61 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "ログインしてください" },
+        { status: 401 },
+      );
+    }
+
+    const userId = Number(session.user.id);
+    const { id } = await params;
+    const meetingId = Number(id);
+
+    if (!Number.isInteger(meetingId) || meetingId <= 0) {
+      return NextResponse.json(
+        { error: "議事録が見つかりません" },
+        { status: 404 },
+      );
+    }
+
+    const meeting = await prisma.meeting.findFirst({
+      where: {
+        id: meetingId,
+        userId,
+      },
+    });
+
+    if (!meeting) {
+      return NextResponse.json(
+        { error: "議事録が見つかりません" },
+        { status: 404 },
+      );
+    }
+
+    await prisma.meeting.delete({
+      where: {
+        id: meetingId,
+      },
+    });
+
+    return NextResponse.json({
+      message: "議事録を削除しました",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      { error: "議事録の削除に失敗しました" },
+      { status: 500 },
+    );
+  }
+}

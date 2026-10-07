@@ -20,6 +20,43 @@ const router = useRouter();
 const [meetings, setMeetings] = useState<Meeting[]>([]);
 const [isLoading, setIsLoading] = useState(true);
 const [error, setError] = useState("");
+const [deletingMeetingId, setDeletingMeetingId] = useState<number | null>(
+  null,
+);
+const handleDeleteMeeting = async (meetingId: number) => {
+  const confirmed = window.confirm("この議事録を削除しますか？");
+
+  if (!confirmed) {
+    return;
+  }
+
+  setDeletingMeetingId(meetingId);
+  setError("");
+
+  try {
+    const response = await fetch(`/api/meetings/${meetingId}`, {
+      method: "DELETE",
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "議事録の削除に失敗しました");
+    }
+
+    setMeetings((currentMeetings) =>
+      currentMeetings.filter((meeting) => meeting.id !== meetingId),
+    );
+  } catch (error) {
+    setError(
+      error instanceof Error
+        ? error.message
+        : "議事録の削除に失敗しました",
+    );
+  } finally {
+    setDeletingMeetingId(null);
+  }
+};
 
 useEffect(() => {
 if (status === "unauthenticated") {
@@ -95,35 +132,50 @@ AI Meeting Notes </h1>
     ) : (
       <div className="space-y-4">
         {meetings.map((meeting) => (
-          <Link
+          <div
             key={meeting.id}
-            href={`/meetings/${meeting.id}`}
-            className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition hover:border-blue-300 hover:shadow-md"
+            className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
           >
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">
-              {meeting.title}
-            </h3>
+            <Link
+              href={`/meetings/${meeting.id}`}
+              className="block transition hover:text-blue-600"
+            >
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">
+                {meeting.title}
+              </h3>
 
-            <p className="mb-3 text-sm text-gray-500">
-              {new Date(meeting.createdAt).toLocaleString("ja-JP", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </p>
+              <p className="mb-3 text-sm text-gray-500">
+                {new Date(meeting.createdAt).toLocaleString("ja-JP", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
 
-            {meeting.summary ? (
-              <p className="line-clamp-2 text-gray-700">
-                {meeting.summary}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-400">
-                要約はありません。
-              </p>
-            )}
-          </Link>
+              {meeting.summary ? (
+                <p className="line-clamp-2 text-gray-700">
+                  {meeting.summary}
+                </p>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  要約はありません。
+                </p>
+              )}
+            </Link>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                type="button"
+                onClick={() => handleDeleteMeeting(meeting.id)}
+                disabled={deletingMeetingId === meeting.id}
+                className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deletingMeetingId === meeting.id ? "削除中..." : "削除"}
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     )}
