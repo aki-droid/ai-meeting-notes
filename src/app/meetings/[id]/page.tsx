@@ -184,6 +184,33 @@ export default function MeetingDetailPage() {
     );
   };
 
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("コピーしました！");
+    } catch (error) {
+      console.error("コピーに失敗しました", error);
+      alert("コピーに失敗しました。ブラウザの権限を確認してください。");
+    }
+  };
+
+  const addTodo = () => {
+    setTodos((current) => [
+      ...current,
+      {
+        id: -Date.now(),
+        content: "",
+        assignee: null,
+        dueDate: null,
+        completed: false,
+      },
+    ]);
+  };
+
+  const deleteTodo = (id: number) => {
+    setTodos((current) => current.filter((todo) => todo.id !== id));
+  };
+
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
@@ -277,14 +304,73 @@ export default function MeetingDetailPage() {
             })}
           </p>
 
+
+{!isEditing && (
+  <button
+    type="button"
+    onClick={() =>
+      copyText(
+        [
+          `議事録タイトル：${meeting.title}`,
+          `作成日時：${new Date(meeting.createdAt).toLocaleString("ja-JP")}`,
+          `【要約】\n${meeting.summary || "要約はありません。"}`,
+          `【文字起こし】\n${
+            meeting.transcripts.length > 0
+              ? meeting.transcripts
+                  .map(
+                    (transcript) =>
+                      `${transcript.speaker}（${formatTime(transcript.startTime)} - ${formatTime(transcript.endTime)}）\n${transcript.text}`,
+                  )
+                  .join("\n\n")
+              : "文字起こしはありません。"
+          }`,
+          `【TODO】\n${
+            meeting.todos.length > 0
+              ? meeting.todos
+                  .map(
+                    (todo, index) =>
+                      `${index + 1}. ${todo.content}\n担当者：${todo.assignee || "未設定"}\n期限：${todo.dueDate ? todo.dueDate.slice(0, 10) : "未設定"}\n状態：${todo.completed ? "完了" : "未完了"}`,
+                  )
+                  .join("\n\n")
+              : "TODOはありません。"
+          }`,
+        ].join("\n\n"),
+      )
+    }
+    className="mb-6 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+  >
+    議事録をまとめてコピー
+  </button>
+)}
+
+
           <div className="mt-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">
-                要約
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                会議の内容を簡潔にまとめています。
-              </p>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  要約
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  会議の内容を簡潔にまとめています。
+                </p>
+              </div>
+
+              {!isEditing && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!meeting.summary?.trim()) {
+                      alert("コピーする要約はありません。");
+                      return;
+                    }
+
+                    copyText(meeting.summary);
+                  }}
+                  className="self-start rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  要約をコピー
+                </button>
+              )}
             </div>
 
             {isEditing ? (
@@ -306,13 +392,34 @@ export default function MeetingDetailPage() {
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              文字起こし
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              会議の発言内容を確認できます。
-            </p>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+           <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                文字起こし
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+               会議の発言内容を確認できます。
+              </p>
+            </div>
+
+            {!isEditing && meeting.transcripts.length > 0 && (
+              <button
+                type="button"
+                onClick={() =>
+                  copyText(
+                    meeting.transcripts
+                      .map(
+                        (transcript) =>
+                          `${transcript.speaker}（${formatTime(transcript.startTime)} - ${formatTime(transcript.endTime)}）\n${transcript.text}`,
+                      )
+                      .join("\n\n"),
+                  )
+                }
+                className="self-start rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                文字起こしをコピー
+              </button>
+            )}
           </div>
 
           {isEditing ? (
@@ -440,25 +547,70 @@ export default function MeetingDetailPage() {
         </div>
 
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              TODO
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              会議で決まった作業を確認できます。
-            </p>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                TODO
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                会議で決まった作業を確認できます。
+              </p>
+            </div>
+
+            {!isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (meeting.todos.length === 0) {
+                    alert("コピーするTODOはありません。");
+                    return;
+                  }
+
+                  copyText(
+                    meeting.todos
+                      .map(
+                        (todo, index) =>
+                          `${index + 1}. ${todo.content}\n担当者：${todo.assignee || "未設定"}\n期限：${todo.dueDate ? todo.dueDate.slice(0, 10) : "未設定"}\n状態：${todo.completed ? "完了" : "未完了"}`,
+                        )
+                        .join("\n\n"),
+                  );
+                }}
+                className="self-start rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                TODOをコピー
+              </button>
+            )}
           </div>
 
           {isEditing ? (
-            todos.length === 0 ? (
-              <p className="text-gray-400">TODOはありません。</p>
-            ) : (
+            <div>
+              <div className="mb-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={addTodo}
+                  disabled={isSaving}
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                >
+                  ＋ TODOを追加
+                </button>
+              </div>
+
               <div className="space-y-6">
                 {todos.map((todo) => (
                   <div
                     key={todo.id}
-                    className="border-b pb-6 last:border-b-0"
+                      className="border-b pb-6 last:border-b-0"
                   >
+                    <div className="mb-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => deleteTodo(todo.id)}
+                        disabled={isSaving}
+                        className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        削除
+                      </button>
+                    </div>
                     <div>
                       <label className="mb-1 block text-sm font-medium text-gray-700">
                         内容
@@ -535,8 +687,8 @@ export default function MeetingDetailPage() {
                     </label>
                   </div>
                 ))}
-              </div>
-            )
+               </div>
+            </div>
           ) : meeting.todos.length === 0 ? (
             <p className="text-gray-400">TODOはありません。</p>
           ) : (

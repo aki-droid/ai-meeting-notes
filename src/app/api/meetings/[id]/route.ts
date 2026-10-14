@@ -140,24 +140,31 @@ export async function PATCH(
         );
       });
 
-    const validTodos =
-      todos.length === meeting.todos.length &&
-      todos.every((todo) => {
-        const original = meeting.todos.find(
-          (item) => item.id === todo.id,
-        );
+    const originalTodoIds = new Set(meeting.todos.map((todo) => todo.id));
+    const submittedExistingTodoIds = todos
+      .filter((todo) => Number.isInteger(todo.id) && todo.id > 0)
+      .map((todo) => todo.id);
 
-        return (
-          original &&
+    const validTodoIds =
+      new Set(submittedExistingTodoIds).size ===
+        submittedExistingTodoIds.length &&
+      submittedExistingTodoIds.every((todoId) =>
+        originalTodoIds.has(todoId),
+      );
+
+    const validTodos =
+      validTodoIds &&
+      todos.every(
+        (todo) =>
+          Number.isInteger(todo.id) &&
           typeof todo.content === "string" &&
           (todo.assignee === null ||
             typeof todo.assignee === "string") &&
           (todo.dueDate === null ||
             (typeof todo.dueDate === "string" &&
               !Number.isNaN(Date.parse(todo.dueDate)))) &&
-          typeof todo.completed === "boolean"
-        );
-      });
+          typeof todo.completed === "boolean",
+      );
 
     if (!validTranscripts || !validTodos) {
       return NextResponse.json(
@@ -190,18 +197,42 @@ export async function PATCH(
         });
       }
 
+      const submittedExistingIds = new Set(submittedExistingTodoIds);
+
+      for (const todo of meeting.todos) {
+        if (!submittedExistingIds.has(todo.id)) {
+          await tx.todo.delete({
+            where: {
+              id: todo.id,
+            },
+          });
+        }
+      }
+
       for (const todo of todos) {
-        await tx.todo.update({
-          where: {
-            id: todo.id,
-          },
-          data: {
-            content: todo.content,
-            assignee: todo.assignee,
-            dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
-            completed: todo.completed,
-          },
-        });
+        if (todo.id > 0) {
+          await tx.todo.update({
+            where: {
+              id: todo.id,
+            },
+            data: {
+              content: todo.content,
+              assignee: todo.assignee,
+              dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
+              completed: todo.completed,
+            },
+          });
+        } else {
+          await tx.todo.create({
+            data: {
+              meetingId,
+              content: todo.content,
+              assignee: todo.assignee,
+              dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
+              completed: todo.completed,
+            },
+          });
+        }
       }
     });
 

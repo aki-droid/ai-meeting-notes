@@ -21,6 +21,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const maxFileSize = 25 * 1024 * 1024;
+
+    if (file.size > maxFileSize) {
+      return NextResponse.json(
+        { error: "ファイルサイズは25MB以下にしてください" },
+        { status: 400 },
+      );
+    }
+
     const uploadDir = path.join(process.cwd(), "public", "uploads");
 
     await mkdir(uploadDir, { recursive: true });
