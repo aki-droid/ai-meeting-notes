@@ -75,13 +75,20 @@ export default function Home() {
       setSummary("");
       setTodos([]);
       setTodoExtracted(false);
-    } catch (error) {
+     } catch (error) {
       console.error(error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "処理に失敗しました"
-      );
+
+      if (error instanceof TypeError) {
+        alert(
+          "通信に失敗しました。ネットワークを確認して、もう一度お試しください。"
+        );
+      } else {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "文字起こしに失敗しました"
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -112,8 +119,20 @@ export default function Home() {
       }
 
       setSummary(data.summary);
-    } catch (error) {
+     } catch (error) {
       console.error(error);
+
+      if (error instanceof TypeError) {
+        alert(
+          "通信に失敗しました。ネットワークを確認して、もう一度お試しください。"
+        );
+      } else {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "AI要約に失敗しました"
+        );
+      }
     } finally {
       setIsSummaryLoading(false);
     }
@@ -147,6 +166,18 @@ export default function Home() {
       setTodoExtracted(true);
     } catch (error) {
       console.error(error);
+
+      if (error instanceof TypeError) {
+        alert(
+          "通信に失敗しました。ネットワークを確認して、もう一度お試しください。"
+        );
+      } else {
+        alert(
+          error instanceof Error
+            ? error.message
+            : "TODOの抽出に失敗しました"
+        );
+      }
     } finally {
       setIsTodoLoading(false);
     }
@@ -154,12 +185,11 @@ export default function Home() {
 
       const handleSaveMeeting = async () => {
         if (!session?.user.id) {
-          alert("ログインしてください");
           return;
         }
 
         if (!title.trim() || !transcription) {
-          alert("会議タイトルと文字起こし結果を入力してください");
+          alert("会議タイトルを入力してください");
           return;
         }
 
@@ -189,7 +219,18 @@ export default function Home() {
           alert("議事録を保存しました");
         } catch (error) {
           console.error(error);
-          alert("議事録の保存に失敗しました");
+
+          if (error instanceof TypeError) {
+            alert(
+              "通信に失敗しました。ネットワークを確認して、もう一度お試しください。"
+            );
+          } else {
+            alert(
+              error instanceof Error
+                ? error.message
+                : "議事録の保存に失敗しました"
+            );
+          }
         }
       };
 
@@ -264,7 +305,10 @@ export default function Home() {
             htmlFor="meeting-title"
             className="mb-2 block font-medium text-gray-700"
           >
-            会議タイトル
+            会議タイトル{" "}
+            {session?.user.id && (
+              <span className="text-red-500">（必須）</span>
+            )}
           </label>
           <input
             id="meeting-title"
@@ -274,6 +318,12 @@ export default function Home() {
             placeholder="例：定例会議"
             className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-blue-500 focus:outline-none"
           />
+
+          {!session?.user.id && (
+            <p className="mt-2 text-sm text-gray-500">
+            議事録を保存するにはログインが必要です
+            </p>
+          )}
         </div>  
           <div
             onDragEnter={(event) => {
@@ -321,6 +371,12 @@ export default function Home() {
                 }}
               />
              </label>
+
+            <p className="mt-3 text-sm text-gray-500">
+              対応形式：MP3、WAV、M4Aなど
+            <br />
+              ファイルサイズ：25MB以下
+            </p>
 
               {file && (
                 <p className="mt-4 text-sm text-gray-700">
@@ -452,13 +508,15 @@ export default function Home() {
               </div>
             </div>
           )}
-          {transcription && (
-            <button
-              onClick={handleSaveMeeting}
-              className="mt-8 rounded-md bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700"
-            >
-              議事録を保存
-            </button>
+          {transcription && session?.user.id && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={handleSaveMeeting}
+                className="rounded-md bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700"
+              >
+                議事録を保存
+              </button>
+            </div>
           )}
         </div>
       </section>
