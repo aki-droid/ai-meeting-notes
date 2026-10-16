@@ -10,7 +10,6 @@ export default function Home() {
 
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [audioUrl, setAudioUrl] = useState("");
   const [title, setTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [transcription, setTranscription] = useState("");
@@ -37,24 +36,6 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      // 音声ファイルをアップロード
-      const uploadFormData = new FormData();
-      uploadFormData.append("file", file);
-
-      const uploadResponse = await fetch("/api/uploads", {
-        method: "POST",
-        body: uploadFormData,
-      });
-
-      const uploadData = await uploadResponse.json();
-
-      if (!uploadResponse.ok) {
-        throw new Error(uploadData.error || "音声ファイルのアップロードに失敗しました");
-      }
-
-      // アップロードAPIから返されたURLを保存
-      setAudioUrl(uploadData.url);
-
       // 音声ファイルを文字起こしAPIに送信
       const transcriptionFormData = new FormData();
       transcriptionFormData.append("file", file);
@@ -201,7 +182,6 @@ export default function Home() {
             },
             body: JSON.stringify({
               title: title.trim(),
-              audioUrl,
               summary,
               status: "completed",
               transcription,
