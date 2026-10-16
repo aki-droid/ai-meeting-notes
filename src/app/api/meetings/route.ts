@@ -63,9 +63,9 @@ export async function POST(request: Request) {
       todos,
     } = await request.json();
 
-    if (!title || !audioUrl) {
+    if (!title) {
       return NextResponse.json(
-        { error: "必要な項目が入力されていません" },
+        { error: "タイトルを入力してください" },
         { status: 400 },
       );
     }
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       data: {
         userId,
         title,
-        audioUrl,
+        audioUrl: audioUrl ?? "",
         summary: summary ?? null,
         status: status ?? "completed",
         transcripts: {
