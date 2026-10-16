@@ -45,10 +45,34 @@ export default function Home() {
         body: transcriptionFormData,
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+
+      let data: {
+        text?: string;
+        segments?: typeof segments;
+        error?: string;
+      };
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        if (response.status === 413) {
+          throw new Error(
+            "音声ファイルが大きすぎます。ファイルサイズを小さくして、もう一度お試しください。"
+          );
+        }
+
+        throw new Error(
+          `文字起こしに失敗しました（HTTP ${response.status}）。時間をおいて再度お試しください。`
+        );
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "文字起こしに失敗しました");
+      }
+
+      if (typeof data.text !== "string" || !Array.isArray(data.segments)) {
+        throw new Error("文字起こし結果の形式が正しくありません");
       }
 
       setTranscription(data.text);
