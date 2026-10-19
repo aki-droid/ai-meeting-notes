@@ -1,56 +1,54 @@
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const file = formData.get("file");
+    const session = await getServerSession(authOptions);
 
-    if (!(file instanceof File)) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: "音声ファイルを選択してください" },
-        { status: 400 },
+        { error: "ログインしてください" },
+        { status: 401 },
       );
     }
 
-    if (!file.type.startsWith("audio/")) {
-      return NextResponse.json(
-        { error: "音声ファイルのみアップロードできます" },
-        { status: 400 },
-      );
-    }
+    const userId = session.user.id;
+    const body = (await request.json()) as HandleUploadBody;
+    const userPathPrefix = `users/${userId}/`;
 
-    const maxFileSize = 25 * 1024 * 1024;
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        if (
+          !pathname.startsWith(userPathPrefix) ||
+          pathname.split("/").some((part) => part === "..")
+        ) {
+          throw new Error("アップロード先が正しくありません");
+        }
 
-    if (file.size > maxFileSize) {
-      return NextResponse.json(
-        { error: "ファイルサイズは25MB以下にしてください" },
-        { status: 400 },
-      );
-    }
-
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
-
-    await mkdir(uploadDir, { recursive: true });
-
-    const extension = path.extname(file.name);
-    const fileName = `${crypto.randomUUID()}${extension}`;
-    const filePath = path.join(uploadDir, fileName);
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    await writeFile(filePath, buffer);
-
-    return NextResponse.json(
-      {
-        message: "音声ファイルのアップロードが完了しました",
-        url: `/uploads/${fileName}`,
+        return {
+          allowedContentTypes: [
+            "audio/mpeg",
+            "audio/mp4",
+            "audio/wav",
+            "audio/webm",
+            "audio/ogg",
+            "audio/aac",
+            "audio/flac",
+            "audio/x-m4a",
+          ],
+          maximumSizeInBytes: 500 * 1024 * 1024,
+          addRandomSuffix: true,
+        };
       },
-      { status: 201 },
-    );
+    });
+
+    return NextResponse.json(jsonResponse);
   } catch (error) {
-    console.error(error);
+    console.error("音声アップロードエラー:", error);
 
     return NextResponse.json(
       { error: "音声ファイルのアップロードに失敗しました" },
