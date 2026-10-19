@@ -3,6 +3,7 @@
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { upload } from "@vercel/blob/client";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -33,16 +34,31 @@ export default function Home() {
       return;
     }
 
+    if (!session?.user?.id) {
+      alert("ログインしてください");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // 音声ファイルを文字起こしAPIに送信
-      const transcriptionFormData = new FormData();
-      transcriptionFormData.append("file", file);
+      const blob = await upload(
+        `users/${session.user.id}/${file.name}`,
+        file,
+        {
+          access: "private",
+          handleUploadUrl: "/api/uploads",
+          contentType: file.type,
+          multipart: file.size > 5 * 1024 * 1024,
+        },
+      );
 
       const response = await fetch("/api/transcriptions", {
         method: "POST",
-        body: transcriptionFormData,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pathname: blob.pathname }),
       });
 
       const responseText = await response.text();
@@ -56,14 +72,8 @@ export default function Home() {
       try {
         data = JSON.parse(responseText);
       } catch {
-        if (response.status === 413) {
-          throw new Error(
-            "音声ファイルが大きすぎます。ファイルサイズを小さくして、もう一度お試しください。"
-          );
-        }
-
         throw new Error(
-          `文字起こしに失敗しました（HTTP ${response.status}）。時間をおいて再度お試しください。`
+          `文字起こしに失敗しました（HTTP ${response.status}）。時間をおいて再度お試しください。`,
         );
       }
 
@@ -80,18 +90,18 @@ export default function Home() {
       setSummary("");
       setTodos([]);
       setTodoExtracted(false);
-     } catch (error) {
+    } catch (error) {
       console.error(error);
 
       if (error instanceof TypeError) {
         alert(
-          "通信に失敗しました。ネットワークを確認して、もう一度お試しください。"
+          "通信に失敗しました。ネットワークを確認して、もう一度お試しください。",
         );
       } else {
         alert(
           error instanceof Error
             ? error.message
-            : "文字起こしに失敗しました"
+            : "文字起こしに失敗しました",
         );
       }
     } finally {
