@@ -4,6 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { upload } from "@vercel/blob/client";
+import { splitAudio } from "@/lib/splitAudio";
 
 export default function Home() {
   const { data: session } = useSession();
@@ -42,51 +43,73 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const blob = await upload(
-        `users/${session.user.id}/${file.name}`,
-        file,
-        {
-          access: "private",
-          handleUploadUrl: "/api/uploads",
-          contentType: file.type,
-          multipart: file.size > 5 * 1024 * 1024,
-        },
-      );
+      // 音声を5分ごとに分割する
+      const chunks = await splitAudio(file);
+      const allTexts: string[] = [];
+      const allSegments: typeof segments = [];
 
-      const response = await fetch("/api/transcriptions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pathname: blob.pathname }),
-      });
+      // 分割した音声を順番にアップロードして文字起こしする
+      for (const chunk of chunks) {
+        const blob = await upload(
+          `users/${session.user.id}/${Date.now()}-${chunk.file.name}`,
+          chunk.file,
+          {
+            access: "private",
+            handleUploadUrl: "/api/uploads",
+            contentType: chunk.file.type,
+            multipart: chunk.file.size > 5 * 1024 * 1024,
+          },
+        );
+        
+        const response = await fetch("/api/transcriptions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pathname: blob.pathname }),
+        });
 
-      const responseText = await response.text();
+        const responseText = await response.text();
 
-      let data: {
-        text?: string;
-        segments?: typeof segments;
-        error?: string;
-      };
+        let data: {
+          text?: string;
+          segments?: typeof segments;
+          error?: string;
+        };
 
-      try {
-        data = JSON.parse(responseText);
-      } catch {
-        throw new Error(
-          `文字起こしに失敗しました（HTTP ${response.status}）。時間をおいて再度お試しください。`,
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error(
+            `文字起こしに失敗しました（HTTP ${response.status}）。時間をおいて再度お試しください。`,
+          );
+        }
+
+        if (!response.ok) {
+          throw new Error(data.error || "文字起こしに失敗しました");
+        }
+
+        if (
+          typeof data.text !== "string" ||
+          !Array.isArray(data.segments)
+        ) {
+          throw new Error("文字起こし結果の形式が正しくありません");
+        }
+
+        allTexts.push(data.text);
+
+        // 分割前の音声に合わせてタイムスタンプを補正する
+        allSegments.push(
+          ...data.segments.map((segment) => ({
+            ...segment,
+            start: segment.start + chunk.startTime,
+            end: segment.end + chunk.startTime,
+          })),
         );
       }
 
-      if (!response.ok) {
-        throw new Error(data.error || "文字起こしに失敗しました");
-      }
-
-      if (typeof data.text !== "string" || !Array.isArray(data.segments)) {
-        throw new Error("文字起こし結果の形式が正しくありません");
-      }
-
-      setTranscription(data.text);
-      setSegments(data.segments);
+      setTranscription(allTexts.join("\n"));
+      setSegments(allSegments);
       setSummary("");
       setTodos([]);
       setTodoExtracted(false);
@@ -389,7 +412,7 @@ export default function Home() {
             <p className="mt-3 text-sm text-gray-500">
               対応形式：MP3、WAV、M4Aなど
             <br />
-              ファイルサイズ：25MB以下
+              ファイルサイズ：長時間・大容量の音声にも対応
             </p>
 
               {file && (
